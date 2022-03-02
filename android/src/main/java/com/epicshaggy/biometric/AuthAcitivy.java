@@ -26,6 +26,9 @@ public class AuthAcitivy extends AppCompatActivity {
     private BiometricPrompt.PromptInfo promptInfo;
     private BiometricPrompt biometricPrompt;
 
+    private int maxRetries;
+    private int currentRetries;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -42,11 +45,14 @@ public class AuthAcitivy extends AppCompatActivity {
             };
         }
 
+        maxRetries = getIntent().getIntExtra("retries", 5);
+        currentRetries = 0;
+
         promptInfo = new BiometricPrompt.PromptInfo.Builder()
                 .setTitle(getIntent().hasExtra("title") ? getIntent().getStringExtra("title") : "Authenticate")
                 .setSubtitle(getIntent().hasExtra("subtitle") ? getIntent().getStringExtra("subtitle") : null)
                 .setDescription(getIntent().hasExtra("description") ? getIntent().getStringExtra("description") : null)
-                .setNegativeButtonText(getIntent().hasExtra("negativeButtonText") ? getIntent().getStringExtra("negativeButtonText") : "Cancel")
+                .setDeviceCredentialAllowed(true)
                 .build();
 
         biometricPrompt = new BiometricPrompt(this, executor, new BiometricPrompt.AuthenticationCallback() {
@@ -66,7 +72,10 @@ public class AuthAcitivy extends AppCompatActivity {
             @Override
             public void onAuthenticationFailed() {
                 super.onAuthenticationFailed();
-                finishActivity("failed");
+                currentRetries++;
+                if (currentRetries >= maxRetries) {
+                  finishActivity("failed");
+                }
             }
         });
 
