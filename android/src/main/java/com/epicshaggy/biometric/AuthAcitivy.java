@@ -11,6 +11,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.biometric.BiometricPrompt;
+import androidx.biometric.BiometricManager;
 
 import android.os.Handler;
 import android.util.Log;
@@ -52,7 +53,7 @@ public class AuthAcitivy extends AppCompatActivity {
                 .setTitle(getIntent().hasExtra("title") ? getIntent().getStringExtra("title") : "Authenticate")
                 .setSubtitle(getIntent().hasExtra("subtitle") ? getIntent().getStringExtra("subtitle") : null)
                 .setDescription(getIntent().hasExtra("description") ? getIntent().getStringExtra("description") : null)
-                .setDeviceCredentialAllowed(true)
+                .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG | BiometricManager.Authenticators.DEVICE_CREDENTIAL)
                 .build();
 
         biometricPrompt = new BiometricPrompt(this, executor, new BiometricPrompt.AuthenticationCallback() {

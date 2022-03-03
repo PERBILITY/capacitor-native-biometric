@@ -93,7 +93,7 @@ public class NativeBiometric extends Plugin {
 
         biometricManager = BiometricManager.from(getContext());
 
-        switch (biometricManager.canAuthenticate()) {
+        switch (biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG | BiometricManager.Authenticators.DEVICE_CREDENTIAL)) {
             case BiometricManager.BIOMETRIC_SUCCESS:
                 ret.put("isAvailable", true);
                 break;
