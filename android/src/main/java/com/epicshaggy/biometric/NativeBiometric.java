@@ -181,9 +181,10 @@ public class NativeBiometric extends Plugin {
 
     @ActivityCallback
     private void verifyResult(PluginCall call, ActivityResult result){
-        if(result.getResultCode() == Activity.RESULT_OK){
+        if (result.getResultCode() == Activity.RESULT_OK){
             Intent data = result.getData();
-            if(data.hasExtra("result")){
+            
+            if (data.hasExtra("result")){
                 switch (data.getStringExtra("result")){
                     case "success":
                         call.resolve();
@@ -195,8 +196,12 @@ public class NativeBiometric extends Plugin {
                         call.reject("Verification error: " + data.getStringExtra("result"), "0");
                         break;
                 }
+            } else {
+                call.reject("Verification error: Activity did not exit cleanly.");
             }
-        }
+        } else {
+            call.reject("Verification error: Activity did not exit cleanly.");
+        }   
     }
 
     @PluginMethod()
