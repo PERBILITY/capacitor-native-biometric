@@ -1,8 +1,7 @@
 package com.epicshaggy.biometric;
 
-import android.Manifest;
 import android.app.Activity;
-import android.app.AppComponentFactory;
+import android.app.KeyguardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -12,15 +11,12 @@ import android.security.KeyPairGeneratorSpec;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 import android.util.Base64;
-import android.util.Log;
-
 
 import androidx.activity.result.ActivityResult;
 import androidx.biometric.BiometricManager;
-import androidx.core.content.ContextCompat;
+import androidx.biometric.BiometricManager.Authenticators;
 
 import com.getcapacitor.JSObject;
-import com.getcapacitor.NativePlugin;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
@@ -52,12 +48,8 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-
 @CapacitorPlugin(name = "NativeBiometric")
 public class NativeBiometric extends Plugin {
-
-    private BiometricManager biometricManager;
-    //protected final static int AUTH_CODE = 0102;
 
     private static final int NONE = 0;
     private static final int FINGERPRINT = 3;
@@ -76,11 +68,13 @@ public class NativeBiometric extends Plugin {
     private SharedPreferences encryptedSharedPreferences;
 
     private int getAvailableFeature() {
-        if (getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_FINGERPRINT)) {
+        PackageManager packageManager = getContext().getPackageManager();
+
+        if (packageManager.hasSystemFeature(PackageManager.FEATURE_FINGERPRINT)) {
             return FINGERPRINT;
-        } if (getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_FACE)) {
+        } if (packageManager.hasSystemFeature(PackageManager.FEATURE_FACE)) {
             return FACE_AUTHENTICATION;
-        } else if (getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_IRIS)) {
+        } else if (packageManager.hasSystemFeature(PackageManager.FEATURE_IRIS)) {
             return IRIS_AUTHENTICATION;
         } else {
             return NONE;
@@ -89,20 +83,22 @@ public class NativeBiometric extends Plugin {
 
     @PluginMethod()
     public void isAvailable(PluginCall call) {
+        Context context = getContext();
         JSObject ret = new JSObject();
+        Boolean isSecure = false;
 
-        biometricManager = BiometricManager.from(getContext());
+        if (Build.VERSION.SDK_INT == 28 || Build.VERSION.SDK_INT == 29) {
+            KeyguardManager keyguardManager = (KeyguardManager) context.getSystemService(Context.KEYGUARD_SERVICE);
 
-        switch (biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG | BiometricManager.Authenticators.DEVICE_CREDENTIAL)) {
-            case BiometricManager.BIOMETRIC_SUCCESS:
-                ret.put("isAvailable", true);
-                break;
-            default:
-                ret.put("isAvailable", false);
-                break;
+            isSecure = keyguardManager.isDeviceSecure();
+        } else {
+            int authenticators = Authenticators.BIOMETRIC_STRONG | Authenticators.DEVICE_CREDENTIAL;
+            int canAuthenticate = BiometricManager.from(context).canAuthenticate(authenticators);
+
+            isSecure = canAuthenticate == BiometricManager.BIOMETRIC_SUCCESS;
         }
 
-
+        ret.put("isAvailable", isSecure);
         ret.put("biometryType", getAvailableFeature());
         call.resolve(ret);
     }
