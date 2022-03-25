@@ -4,18 +4,12 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
-
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
 import androidx.biometric.BiometricPrompt;
 import androidx.biometric.BiometricManager;
 
 import android.os.Handler;
-import android.util.Log;
-import android.view.View;
 
 import com.epicshaggy.biometric.capacitornativebiometric.R;
 
@@ -23,21 +17,19 @@ import java.util.concurrent.Executor;
 
 public class AuthAcitivy extends AppCompatActivity {
 
-    private Executor executor;
-    private BiometricPrompt.PromptInfo promptInfo;
-    private BiometricPrompt biometricPrompt;
-
-    private int maxRetries;
-    private int currentRetries;
+    private int maxRetries = 0;
+    private int currentRetries = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_auth_acitivy);
 
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.P){
+        Executor executor;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             executor = this.getMainExecutor();
-        }else{
+        } else {
             executor = new Executor() {
                 @Override
                 public void execute(Runnable command) {
@@ -46,17 +38,20 @@ public class AuthAcitivy extends AppCompatActivity {
             };
         }
 
+        BiometricPrompt.PromptInfo.Builder promptBuilder = new BiometricPrompt.PromptInfo.Builder()
+            .setTitle(getIntent().hasExtra("title") ? getIntent().getStringExtra("title") : "Authenticate")
+            .setSubtitle(getIntent().hasExtra("subtitle") ? getIntent().getStringExtra("subtitle") : null)
+            .setDescription(getIntent().hasExtra("description") ? getIntent().getStringExtra("description") : null);
+
+        if (Build.VERSION.SDK_INT == 28 || Build.VERSION.SDK_INT == 29) {
+            promptBuilder = promptBuilder.setDeviceCredentialAllowed(true);
+        } else {
+            promptBuilder = promptBuilder.setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG | BiometricManager.Authenticators.DEVICE_CREDENTIAL);
+        }
+
         maxRetries = getIntent().getIntExtra("retries", 5);
-        currentRetries = 0;
 
-        promptInfo = new BiometricPrompt.PromptInfo.Builder()
-                .setTitle(getIntent().hasExtra("title") ? getIntent().getStringExtra("title") : "Authenticate")
-                .setSubtitle(getIntent().hasExtra("subtitle") ? getIntent().getStringExtra("subtitle") : null)
-                .setDescription(getIntent().hasExtra("description") ? getIntent().getStringExtra("description") : null)
-                .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG | BiometricManager.Authenticators.DEVICE_CREDENTIAL)
-                .build();
-
-        biometricPrompt = new BiometricPrompt(this, executor, new BiometricPrompt.AuthenticationCallback() {
+        BiometricPrompt biometricPrompt = new BiometricPrompt(this, executor, new BiometricPrompt.AuthenticationCallback() {
             @Override
             public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
                 super.onAuthenticationError(errorCode, errString);
@@ -73,15 +68,14 @@ public class AuthAcitivy extends AppCompatActivity {
             @Override
             public void onAuthenticationFailed() {
                 super.onAuthenticationFailed();
-                currentRetries++;
-                if (currentRetries >= maxRetries) {
-                  finishActivity("failed");
+
+                if (++currentRetries >= maxRetries) {
+                    finishActivity("failed");
                 }
             }
         });
 
-        biometricPrompt.authenticate(promptInfo);
-
+        biometricPrompt.authenticate(promptBuilder.build());
     }
 
     void finishActivity(String result) {
@@ -90,5 +84,4 @@ public class AuthAcitivy extends AppCompatActivity {
         setResult(RESULT_OK, intent);
         finish();
     }
-
 }
