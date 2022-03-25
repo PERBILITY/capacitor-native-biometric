@@ -31,7 +31,7 @@ public class NativeBiometric: CAPPlugin {
         
         obj["isAvailable"] = false
         
-        if context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error){
+        if context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error){
             obj["isAvailable"] = true
         }
         
